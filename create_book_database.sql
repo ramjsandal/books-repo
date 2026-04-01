@@ -1,0 +1,77 @@
+DROP SCHEMA IF EXISTS booksdb;
+CREATE SCHEMA booksdb;
+USE booksdb;
+
+CREATE TABLE publisher(
+name VARCHAR(64) PRIMARY KEY NOT NULL,
+date_established DATE,
+num_employees INT
+);
+
+CREATE TABLE author(
+author_id INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
+first_name VARCHAR(64) NOT NULL,
+last_name VARCHAR(64) NOT NULL,
+age INT,
+primary_language VARCHAR(64)
+);
+
+CREATE TABLE book(
+isbn VARCHAR(16) PRIMARY KEY NOT NULL,
+title VARCHAR(128) NOT NULL,
+average_rating FLOAT,
+page_count INT NOT NULL,
+initial_pub_date DATE,
+publisher_name VARCHAR(64) NOT NULL,
+FOREIGN KEY (publisher_name) REFERENCES publisher(name)
+	ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+CREATE TABLE book_authors(
+isbn VARCHAR(16) NOT NULL,
+author_id INT NOT NULL,
+FOREIGN KEY (isbn) REFERENCES book(isbn)
+	ON UPDATE CASCADE ON DELETE CASCADE,
+FOREIGN KEY (author_id) REFERENCES author(author_id)
+	ON UPDATE CASCADE ON DELETE CASCADE 
+);
+
+CREATE TABLE genre(
+name VARCHAR(64) PRIMARY KEY NOT NULL,
+description VARCHAR(128)
+);
+
+CREATE TABLE book_genres(
+isbn VARCHAR(16) NOT NULL,
+genre_name VARCHAR(64) NOT NULL,
+FOREIGN KEY (isbn) REFERENCES book(isbn)
+	ON UPDATE CASCADE ON DELETE CASCADE,
+FOREIGN KEY (genre_name) REFERENCES genre(name)
+	ON UPDATE CASCADE ON DELETE CASCADE 
+);
+
+CREATE TABLE application_user(
+username VARCHAR(128) PRIMARY KEY NOT NULL,
+user_password VARCHAR(128) NOT NULL,
+display_name VARCHAR(128) NOT NULL,
+UNIQUE(display_name)
+); 
+
+CREATE TABLE review(
+review_id INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
+rating FLOAT NOT NULL,
+description VARCHAR(1024) NOT NULL,
+username VARCHAR(128) NOT NULL,
+FOREIGN KEY (username) REFERENCES application_user(username)
+	ON UPDATE CASCADE ON DELETE CASCADE 
+);
+
+CREATE TABLE book_reviews(
+isbn VARCHAR(16) NOT NULL,
+review_id INT NOT NULL,
+FOREIGN KEY (isbn) REFERENCES book(isbn)
+	ON UPDATE CASCADE ON DELETE CASCADE,
+FOREIGN KEY (review_id) REFERENCES review(review_id)
+	ON UPDATE CASCADE ON DELETE CASCADE 
+);
+
