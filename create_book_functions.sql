@@ -9,14 +9,45 @@ BEGIN
 END //
 DELIMITER ;
 
-DROP PROCEDURE IF EXISTS add_book;
+DROP PROCEDURE IF EXISTS add_publisher;
 DELIMITER //
-CREATE PROCEDURE add_book(IN in_isbn VARCHAR(16), IN in_title VARCHAR(128), IN in_page_count INT, IN in_init_pub_date DATE, IN in_publisher_name VARCHAR(64))
+CREATE PROCEDURE add_publisher(IN in_name VARCHAR(128))
 BEGIN
-    INSERT INTO book(isbn, title, average_rating, page_count, initial_pub_date, publisher_name) 
-    VALUES(in_isbn, in_title, NULL, in_page_count, in_init_pub_date, in_publisher_name);
+    INSERT INTO publisher(name, date_established, num_employees) 
+    VALUES(in_name, NULL, NULL);
 END //
 DELIMITER ;
+
+DROP PROCEDURE IF EXISTS add_book;
+DELIMITER //
+CREATE PROCEDURE add_book(IN in_isbn VARCHAR(16), IN in_title VARCHAR(128), IN in_page_count INT, IN in_publisher_name VARCHAR(64))
+BEGIN
+	IF NOT EXISTS(SELECT * FROM publisher WHERE name = in_publisher_name)
+    THEN CALL add_publisher(in_publisher_name);
+    END IF;
+
+    INSERT INTO book(isbn, title, average_rating, page_count, initial_pub_date, publisher_name) 
+    VALUES(in_isbn, in_title, NULL, in_page_count, NULL, in_publisher_name);
+END //
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS delete_book;
+DELIMITER //
+CREATE PROCEDURE delete_book(IN in_isbn VARCHAR(16))
+BEGIN
+	IF NOT EXISTS (SELECT * FROM book WHERE isbn = in_isbn)
+    THEN SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = "No books exist with this isbn!";
+    END IF;
+    DELETE FROM book WHERE isbn = in_isbn;
+END //
+DELIMITER ;
+
+
+# EXAMPLES
+#CALL add_book ("102", "testbook", 200, "testpub2");
+#CALL delete_book ("10231359184");
+#CALL add_publisher("testpub");
 
 DROP PROCEDURE IF EXISTS leave_review;
 DELIMITER //
@@ -28,6 +59,30 @@ BEGIN
     VALUES(in_isbn, LAST_INSERT_ID());
 END //
 DELIMITER ;
+
+DROP PROCEDURE IF EXISTS get_all_reviews_for_book;
+DELIMITER //
+CREATE PROCEDURE get_all_reviews_for_book(IN in_isbn VARCHAR(16))
+BEGIN
+    SELECT review.* FROM review NATURAL JOIN
+    book_reviews NATURAL JOIN
+    book WHERE isbn = in_isbn;
+END //
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS get_user_reviews;
+DELIMITER //
+CREATE PROCEDURE get_user_reviews(IN in_display_name VARCHAR(128))
+BEGIN
+    SELECT book.isbn, book.title, review.* FROM review NATURAL JOIN
+    application_user NATURAL JOIN
+    book_reviews NATURAL JOIN
+    book WHERE display_name = in_display_name;
+END //
+DELIMITER ;
+
+#CALL get_user_reviews("sam");
+#CALL get_all_reviews_for_book("101");
 
 DROP PROCEDURE IF EXISTS add_author;
 DELIMITER //
@@ -118,13 +173,15 @@ BEGIN
     WHERE username = username_p AND user_password = password_p;
 
     IF display_name_result IS NULL THEN
-        SIGNAL SQLSTATE '45000';
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = "Login information does not exist, is there a typo in your username or password?";
     END IF;
 
     RETURN display_name_result;
 END //
-
 DELIMITER ;
+
+SELECT get_display_name("xdd", "woajdsoa");
 
 DROP FUNCTION IF EXISTS user_exists;
 DELIMITER //
