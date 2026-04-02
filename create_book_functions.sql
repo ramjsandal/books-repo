@@ -43,6 +43,51 @@ BEGIN
 END //
 DELIMITER ;
 
+DROP PROCEDURE IF EXISTS delete_author;
+DELIMITER //
+CREATE PROCEDURE delete_author(IN in_author_id INT)
+BEGIN
+	IF NOT EXISTS (SELECT * FROM author WHERE author_id = in_author_id)
+    THEN SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = "No authors exist with this id!";
+    END IF;
+    DELETE FROM author WHERE author_id = in_author_id;
+END //
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS delete_review;
+DELIMITER //
+CREATE PROCEDURE delete_review(IN in_review_id INT, IN in_username VARCHAR(128))
+BEGIN
+	IF NOT EXISTS (SELECT * FROM review NATURAL JOIN book_reviews WHERE review_id = in_review_id AND username = in_username)
+    THEN SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = "No reviews exist with this id by this user!";
+    END IF;
+    DELETE FROM review WHERE review_id = in_review_id;
+END //
+DELIMITER ;
+
+#CALL delete_review(2, "sam");
+
+DROP PROCEDURE IF EXISTS author_books;
+DELIMITER //
+CREATE PROCEDURE author_books(IN in_author_id INT)
+BEGIN
+	IF NOT EXISTS (SELECT * FROM author WHERE author_id = in_author_id)
+    THEN SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = "No authors exist with this id!";
+    END IF;
+    
+    SELECT author.first_name, author.last_name, book.* FROM book NATURAL JOIN
+    book_authors NATURAL JOIN
+    author WHERE author_id = in_author_id;
+    
+END //
+DELIMITER ;
+
+#CALL add_author("john", "author", 42, "english");
+#CALL add_authorship("101", 1);
+#CALL author_books(1);
 
 # EXAMPLES
 #CALL add_book ("102", "testbook", 200, "testpub2");
@@ -53,12 +98,78 @@ DROP PROCEDURE IF EXISTS leave_review;
 DELIMITER //
 CREATE PROCEDURE leave_review(IN in_rating FLOAT, IN in_description VARCHAR(1024), IN in_username VARCHAR(128), IN in_isbn VARCHAR(16))
 BEGIN
+	IF (in_rating < 0 OR in_rating > 5)
+    THEN SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = "Review must be between 0 and 5 stars!";
+    END IF;
+
     INSERT INTO review(rating, description, username) 
     VALUES(in_rating, in_description, in_username);
     INSERT INTO book_reviews(isbn, review_id)
     VALUES(in_isbn, LAST_INSERT_ID());
 END //
 DELIMITER ;
+
+#CALL leave_review(3, "it was ok", "sam", "201");
+
+DROP PROCEDURE IF EXISTS update_review;
+DELIMITER //
+CREATE PROCEDURE update_review(IN in_rating FLOAT, IN in_description VARCHAR(1024), IN in_username VARCHAR(128), IN in_isbn VARCHAR(16))
+BEGIN
+	IF NOT EXISTS (SELECT * FROM review NATURAL JOIN book_reviews 
+    WHERE username = in_username AND isbn = in_isbn)
+    THEN SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = "No reviews found from this user for this book!";
+    END IF;
+    
+	IF (in_rating < 0 OR in_rating > 5)
+    THEN SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = "Review must be between 0 and 5 stars!";
+    END IF;
+
+	UPDATE review
+    NATURAL JOIN book_reviews
+    SET rating = in_rating, description = in_description
+    WHERE username = in_username AND isbn = in_isbn;
+END //
+DELIMITER ;
+
+#CALL update_review(3, "it wasn't very good", "sam", "101");
+
+DROP PROCEDURE IF EXISTS update_book;
+DELIMITER //
+CREATE PROCEDURE update_book(IN in_isbn VARCHAR(16), IN in_title VARCHAR(128), IN in_page_count INT, IN in_publisher_name VARCHAR(64))
+BEGIN
+	
+    IF NOT EXISTS(SELECT * FROM publisher WHERE name = in_publisher_name)
+    THEN CALL add_publisher(in_publisher_name);
+    END IF;
+    
+	UPDATE book
+    SET title = in_title, page_count = in_page_count, publisher_name = in_publisher_name 
+    WHERE isbn = in_isbn;
+END //
+DELIMITER ;
+
+#CALL update_book("500", "how", 5000, "kerblam");
+
+DROP PROCEDURE IF EXISTS update_author;
+DELIMITER //
+CREATE PROCEDURE update_author(IN in_author_id INT, IN in_first_name VARCHAR(128), IN in_last_name VARCHAR(128), IN in_age INT, IN in_language VARCHAR(128))
+BEGIN
+	
+    IF NOT EXISTS(SELECT * FROM author WHERE author_id = in_author_id)
+		THEN SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = "Author does not exist in database";
+    END IF;
+        
+	UPDATE author
+    SET first_name = in_first_name, last_name = in_last_name, age = in_age, primary_language = in_language
+    WHERE author_id = in_author_id;
+END //
+DELIMITER ;
+
+#CALL update_author(45, "johnny", "author", 40, "english");
 
 DROP PROCEDURE IF EXISTS get_all_reviews_for_book;
 DELIMITER //
@@ -69,6 +180,23 @@ BEGIN
     book WHERE isbn = in_isbn;
 END //
 DELIMITER ;
+
+DROP FUNCTION IF EXISTS has_reviewed;
+DELIMITER //
+CREATE FUNCTION has_reviewed(in_username VARCHAR(128), in_isbn VARCHAR(16))
+RETURNS BOOLEAN
+DETERMINISTIC
+READS SQL DATA
+BEGIN
+    DECLARE review_count INT;
+    SELECT COUNT(*) INTO review_count FROM review NATURAL JOIN
+    book_reviews NATURAL JOIN
+    book WHERE(in_username = review.username AND in_isbn = book.isbn);
+    RETURN review_count > 0;
+END //
+DELIMITER ;
+
+#SELECT has_reviewed("sam", "101");
 
 DROP PROCEDURE IF EXISTS get_user_reviews;
 DELIMITER //
@@ -94,6 +222,22 @@ in_primary_language VARCHAR(64))
 BEGIN
     INSERT INTO author(first_name, last_name, age, primary_language) 
     VALUES(in_first_name, in_last_name, in_age, in_primary_language);
+END //
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS get_authors;
+DELIMITER //
+CREATE PROCEDURE get_authors()
+BEGIN
+    SELECT * FROM author;
+END //
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS get_books;
+DELIMITER //
+CREATE PROCEDURE get_books()
+BEGIN
+    SELECT * FROM book;
 END //
 DELIMITER ;
 
@@ -181,7 +325,7 @@ BEGIN
 END //
 DELIMITER ;
 
-SELECT get_display_name("xdd", "woajdsoa");
+#SELECT get_display_name("xdd", "woajdsoa");
 
 DROP FUNCTION IF EXISTS user_exists;
 DELIMITER //
