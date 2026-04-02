@@ -34,6 +34,14 @@ def help_message():
     print("See all reviews for a book: \'see_reviews\'")
     print("See your reviews: \'my_reviews\'")
 
+    print("\nGenre Actions:")
+    print("Add a genre to the database: \'add_genre\'")
+    print("Get all books with this genre: \'genre_books\'")
+    print("Add a genre to a book: \'classify_book\'")
+    print("Remove a genre from a book: \'declassify_book\'")
+    print("Update a genre in the database: \'update_genre\'")
+    print("Remove a genre from the database: \'delete_genre\'")
+
 def run_procedure(command_string, args, success_string):
     try:
         cur.callproc(command_string, args)
@@ -145,8 +153,6 @@ while (running):
             except pymysql.Error as e:
                 throw_error(e)
 
-
-
         ######### AUTHOR ACTIONS ##########
         case "add_author":
             first_name = input("Enter first name of author: ")
@@ -241,6 +247,47 @@ while (running):
                     print(f"Text review: {review['description']}\n")
             except pymysql.Error as e:
                 throw_error(e)
+
+        ########## GENRE ACTIONS ##########
+        case "add_genre":
+            name = input("Enter name of genre: ")
+            description = input("Enter description of genre: ")
+            run_procedure(command_string="add_genre", args=[name, description], success_string="Genre added to database!") 
+
+        case "update_genre":
+            name = input("Enter name of genre: ")
+            description = input("Enter description of genre: ")
+            run_procedure(command_string="update_genre", args=[name, description], success_string="Genre updated in database!") 
+
+        case "delete_genre":
+            name = input("Enter name of genre: ")
+            run_procedure("delete_genre", [name], "Genre deleted from database!")
+
+        case "genre_books":
+            name = input("Enter name of genre: ")
+            try:
+                cur.callproc("get_books_with_genre", args=[name])
+                cnx.commit()
+                responses = cur.fetchall()
+                print(f"Books with genre {name}:")
+                for book in responses:
+                    print(f"ISBN: {book['isbn']}: ")
+                    print(f"Title: {book['title']}")
+                    print(f"Average rating: {book['average_rating']}")
+                    print(f"Page count: {book['page_count']}")
+                    print(f"Initial publication date: {book['initial_pub_date']}\n")
+            except pymysql.Error as e:
+                throw_error(e)
+
+        case "classify_book":
+            name = input("Enter name of genre: ")
+            isbn = input("Enter ISBN of book: ")
+            run_procedure(command_string="add_genre_to_book", args=[name, isbn], success_string="Genre added to book in database!") 
+
+        case "declassify_book":
+            name = input("Enter name of genre: ")
+            isbn = input("Enter ISBN of book: ")
+            run_procedure(command_string="remove_genre_from_book", args=[name, isbn], success_string="Genre removed from book in database!") 
 
         ########## SYSTEM ACTIONS ##########
         case "help":

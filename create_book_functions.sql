@@ -18,6 +18,81 @@ BEGIN
 END //
 DELIMITER ;
 
+DROP PROCEDURE IF EXISTS add_genre;
+DELIMITER //
+CREATE PROCEDURE add_genre(IN in_name VARCHAR(128), in_description VARCHAR(1024))
+BEGIN
+    INSERT INTO genre(name, description) 
+    VALUES(in_name, in_description);
+END //
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS get_books_with_genre;
+DELIMITER //
+CREATE PROCEDURE get_books_with_genre(IN in_name VARCHAR(128))
+BEGIN
+    SELECT book.* FROM book_genres INNER JOIN book;
+END //
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS add_genre_to_book;
+DELIMITER //
+CREATE PROCEDURE add_genre_to_book(in_genre_name VARCHAR(64), in_isbn VARCHAR(16))
+BEGIN
+	IF NOT EXISTS (SELECT * FROM book WHERE isbn = in_isbn)
+    THEN SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = "No books exist with this ISBN!";
+    END IF;
+    
+	IF NOT EXISTS (SELECT * FROM genre WHERE name = in_genre_name)
+    THEN SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = "No genres exist with this name!";
+    END IF;
+    
+    INSERT INTO book_genres(isbn, genre_name) 
+    VALUES(in_isbn, in_genre_name);
+END //
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS update_genre;
+DELIMITER //
+CREATE PROCEDURE update_genre(IN in_name VARCHAR(64), IN in_description VARCHAR(1024))
+BEGIN
+	IF NOT EXISTS (SELECT * FROM genre WHERE name = in_name)
+    THEN SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = "No genres found with this name!";
+    END IF;
+
+	UPDATE genre
+    SET description = in_description
+    WHERE name = in_name;
+END //
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS delete_genre;
+DELIMITER //
+CREATE PROCEDURE delete_genre(IN in_name VARCHAR(64))
+BEGIN
+	IF NOT EXISTS (SELECT * FROM genre WHERE name = in_name)
+    THEN SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = "No genres exist with this name!";
+    END IF;
+    DELETE FROM genre WHERE name = in_name;
+END //
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS remove_genre_from_book;
+DELIMITER //
+CREATE PROCEDURE remove_genre_from_book(IN in_name VARCHAR(64), IN in_isbn VARCHAR(16))
+BEGIN
+	IF NOT EXISTS (SELECT * FROM book_genres WHERE genre_name = in_name AND isbn = in_isbn)
+    THEN SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = "This book is not classified with this genre!";
+    END IF;
+    DELETE FROM book_genres WHERE genre_name = in_name AND isbn = in_isbn;
+END //
+DELIMITER ;
+
 DROP PROCEDURE IF EXISTS add_book;
 DELIMITER //
 CREATE PROCEDURE add_book(IN in_isbn VARCHAR(16), IN in_title VARCHAR(128), IN in_page_count INT, IN in_publisher_name VARCHAR(64))
@@ -241,17 +316,6 @@ BEGIN
 END //
 DELIMITER ;
 
-DROP PROCEDURE IF EXISTS add_genre;
-DELIMITER //
-CREATE PROCEDURE add_genre(
-in_name VARCHAR(64),
-in_description VARCHAR(128))
-BEGIN
-    INSERT INTO genre(name, description) 
-    VALUES(in_name, in_description);
-END //
-DELIMITER ;
-
 DROP PROCEDURE IF EXISTS add_authorship;
 DELIMITER //
 CREATE PROCEDURE add_authorship(
@@ -260,17 +324,6 @@ in_author_id INT)
 BEGIN
     INSERT INTO book_authors(isbn, author_id) 
     VALUES(in_isbn, in_author_id);
-END //
-DELIMITER ;
-
-DROP PROCEDURE IF EXISTS add_genre_to_book;
-DELIMITER //
-CREATE PROCEDURE add_genre_to_book(
-in_isbn VARCHAR(16),
-in_genre_name VARCHAR(64))
-BEGIN
-    INSERT INTO book_genres(isbn, genre_name) 
-    VALUES(in_isbn, in_genre_name);
 END //
 DELIMITER ;
 
