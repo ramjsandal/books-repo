@@ -1,14 +1,13 @@
-DROP SCHEMA IF EXISTS booksdb;
-CREATE SCHEMA booksdb;
+CREATE SCHEMA IF NOT EXISTS booksdb;
 USE booksdb;
 
-CREATE TABLE publisher(
+CREATE TABLE IF NOT EXISTS publisher(
 name VARCHAR(64) PRIMARY KEY NOT NULL,
 date_established DATE,
 num_employees INT
 );
 
-CREATE TABLE author(
+CREATE TABLE IF NOT EXISTS author(
 author_id INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
 first_name VARCHAR(64) NOT NULL,
 last_name VARCHAR(64) NOT NULL,
@@ -16,7 +15,7 @@ age INT,
 primary_language VARCHAR(64)
 );
 
-CREATE TABLE book(
+CREATE TABLE IF NOT EXISTS book(
 isbn VARCHAR(16) PRIMARY KEY NOT NULL,
 title VARCHAR(128) NOT NULL,
 average_rating FLOAT,
@@ -27,7 +26,7 @@ FOREIGN KEY (publisher_name) REFERENCES publisher(name)
 	ON UPDATE CASCADE ON DELETE CASCADE
 );
 
-CREATE TABLE book_authors(
+CREATE TABLE IF NOT EXISTS book_authors(
 isbn VARCHAR(16) NOT NULL,
 author_id INT NOT NULL,
 FOREIGN KEY (isbn) REFERENCES book(isbn)
@@ -36,12 +35,12 @@ FOREIGN KEY (author_id) REFERENCES author(author_id)
 	ON UPDATE CASCADE ON DELETE CASCADE 
 );
 
-CREATE TABLE genre(
+CREATE TABLE IF NOT EXISTS genre(
 name VARCHAR(64) PRIMARY KEY NOT NULL,
 description VARCHAR(128)
 );
 
-CREATE TABLE book_genres(
+CREATE TABLE IF NOT EXISTS book_genres(
 isbn VARCHAR(16) NOT NULL,
 genre_name VARCHAR(64) NOT NULL,
 FOREIGN KEY (isbn) REFERENCES book(isbn)
@@ -50,14 +49,14 @@ FOREIGN KEY (genre_name) REFERENCES genre(name)
 	ON UPDATE CASCADE ON DELETE CASCADE 
 );
 
-CREATE TABLE application_user(
+CREATE TABLE IF NOT EXISTS application_user(
 username VARCHAR(128) PRIMARY KEY NOT NULL,
 user_password VARCHAR(128) NOT NULL,
 display_name VARCHAR(128) NOT NULL,
 UNIQUE(display_name)
 ); 
 
-CREATE TABLE review(
+CREATE TABLE IF NOT EXISTS review(
 review_id INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
 rating FLOAT NOT NULL,
 description VARCHAR(1024) NOT NULL,
@@ -66,7 +65,7 @@ FOREIGN KEY (username) REFERENCES application_user(username)
 	ON UPDATE CASCADE ON DELETE CASCADE 
 );
 
-CREATE TABLE book_reviews(
+CREATE TABLE IF NOT EXISTS book_reviews(
 isbn VARCHAR(16) NOT NULL,
 review_id INT NOT NULL,
 FOREIGN KEY (isbn) REFERENCES book(isbn)

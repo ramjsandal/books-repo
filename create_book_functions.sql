@@ -1,5 +1,33 @@
 USE booksdb;
 
+DROP PROCEDURE IF EXISTS update_user;
+DELIMITER //
+CREATE PROCEDURE update_user(IN in_username VARCHAR(128), IN in_password VARCHAR(128), IN in_display_name VARCHAR(128))
+BEGIN
+	IF NOT EXISTS (SELECT * FROM application_user WHERE username = in_username)
+    THEN SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = "No users found with this username!";
+    END IF;
+
+	UPDATE application_user
+    SET user_password = in_password, display_name = in_display_name
+    WHERE username = in_username;
+END //
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS delete_user;
+DELIMITER //
+CREATE PROCEDURE delete_user(IN in_username VARCHAR(128))
+BEGIN
+	IF NOT EXISTS (SELECT * FROM application_user WHERE username = in_username)
+    THEN SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = "No users found with this username!";
+    END IF;
+
+	DELETE FROM application_user WHERE username = in_username;
+END //
+DELIMITER ;
+
 DROP PROCEDURE IF EXISTS register_user;
 DELIMITER //
 CREATE PROCEDURE register_user(IN in_username VARCHAR(128), IN in_password VARCHAR(128), IN in_display_name VARCHAR(128))
@@ -9,12 +37,72 @@ BEGIN
 END //
 DELIMITER ;
 
+DROP PROCEDURE IF EXISTS get_users;
+DELIMITER //
+CREATE PROCEDURE get_users()
+BEGIN
+	SELECT display_name from application_user;
+END //
+DELIMITER ;
+
 DROP PROCEDURE IF EXISTS add_publisher;
 DELIMITER //
-CREATE PROCEDURE add_publisher(IN in_name VARCHAR(128))
+CREATE PROCEDURE add_publisher(IN in_name VARCHAR(128), IN in_num_employees INT)
 BEGIN
     INSERT INTO publisher(name, date_established, num_employees) 
-    VALUES(in_name, NULL, NULL);
+    VALUES(in_name, NULL, in_num_employees);
+END //
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS update_publisher;
+DELIMITER //
+CREATE PROCEDURE update_publisher(IN in_name VARCHAR(64), IN in_num_employees INT)
+BEGIN
+	IF NOT EXISTS (SELECT * FROM publisher WHERE name = in_name)
+    THEN SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = "No publishers found with this name!";
+    END IF;
+
+	UPDATE publisher
+    SET num_employees = in_num_employees
+    WHERE name = in_name;
+END //
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS delete_publisher;
+DELIMITER //
+CREATE PROCEDURE delete_publisher(IN in_name VARCHAR(64))
+BEGIN
+	IF NOT EXISTS (SELECT * FROM publisher WHERE name = in_name)
+    THEN SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = "No publishers found with this name!";
+    END IF;
+
+	DELETE FROM publisher WHERE name = in_name;
+END //
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS publisher_books;
+DELIMITER //
+CREATE PROCEDURE publisher_books(IN in_name VARCHAR(64))
+BEGIN
+	IF NOT EXISTS (SELECT * FROM book WHERE publisher_name = in_name)
+    THEN SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = "No books exist with this publisher!";
+    END IF;
+    
+    SELECT author.first_name, author.last_name, book.* FROM book NATURAL JOIN
+    book_authors NATURAL JOIN
+    author WHERE publisher_name = in_name;
+    
+END //
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS get_publishers;
+DELIMITER //
+CREATE PROCEDURE get_publishers()
+BEGIN
+    SELECT name, num_employees FROM publisher;
 END //
 DELIMITER ;
 
@@ -98,7 +186,7 @@ DELIMITER //
 CREATE PROCEDURE add_book(IN in_isbn VARCHAR(16), IN in_title VARCHAR(128), IN in_page_count INT, IN in_publisher_name VARCHAR(64))
 BEGIN
 	IF NOT EXISTS(SELECT * FROM publisher WHERE name = in_publisher_name)
-    THEN CALL add_publisher(in_publisher_name);
+    THEN CALL add_publisher(in_publisher_name, NULL);
     END IF;
 
     INSERT INTO book(isbn, title, average_rating, page_count, initial_pub_date, publisher_name) 
@@ -217,7 +305,7 @@ CREATE PROCEDURE update_book(IN in_isbn VARCHAR(16), IN in_title VARCHAR(128), I
 BEGIN
 	
     IF NOT EXISTS(SELECT * FROM publisher WHERE name = in_publisher_name)
-    THEN CALL add_publisher(in_publisher_name);
+    THEN CALL add_publisher(in_publisher_name, NULL);
     END IF;
     
 	UPDATE book

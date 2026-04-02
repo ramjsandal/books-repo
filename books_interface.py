@@ -12,6 +12,9 @@ def help_message():
     print("\nSystem Actions:")
     print("Exit the program: \'quit\'")
     print("See this list of commands again: \'help\'")
+    print("See all users in the database: \'get_users\'")
+    print("Update account information \'update_account\'")
+    print("Delete account \'delete_account\'")
 
     print("\nBook Actions:")
     print("Add a book to the database: \'add_book\'")
@@ -26,6 +29,13 @@ def help_message():
     print("Update an author in the database: \'update_author\'")
     print("Get all authors in the database: \'get_authors\'")
     print("Credit an author on a book: \'add_credit\'")
+
+    print("\nPublisher Actions:")
+    print("Add a publisher to the database: \'add_publisher\'")
+    print("Get all books by a publisher: \'publisher_books\'")
+    print("Get all publishers in the database: \'get_publishers\'")
+    print("Update a publisher in the database: \'update_publisher\'")
+    print("Remove a publisher from the database: \'delete_publisher\'")
 
     print("\nReview Actions:")
     print("Leave a review for a book: \'leave_review\'")
@@ -190,6 +200,47 @@ while (running):
             except pymysql.Error as e:
                 throw_error(e)
 
+        ######### PUBLISHER ACTIONS ##########
+        case "add_publisher":
+            name = input("Enter name of publisher: ")
+            num_employees = int(input("Enter number of employees of publisher: "))
+            run_procedure("add_publisher", [name, num_employees], "Publisher added to database!")
+                    
+        case "delete_publisher":
+            name = input("Enter name of publisher: ")
+            run_procedure("delete_publisher", [name], "Publisher deleted from database!")
+
+        case "update_publisher":
+            name = input("Enter name of publisher: ")
+            num_employees = int(input("Enter new number of employees of publisher: "))
+            run_procedure("update_publisher", [name, num_employees], "Publisher updated in database!")
+
+        case "get_publishers":
+            try:
+                cur.callproc("get_publishers")
+                cnx.commit()
+                for publisher in cur.fetchall():
+                    print(f"Publisher name: {publisher['name']}")
+                    print(f"Number of employees: {publisher['num_employees']}\n")
+            except pymysql.Error as e:
+                throw_error(e)
+
+        case "publisher_books":
+            publisher = input("Enter name of publisher: ")
+            try:
+                cur.callproc("publisher_books", args=[publisher])
+                cnx.commit()
+                responses = cur.fetchall()
+                print(f"Books published by {publisher}:")
+                for book in responses:
+                    print(f"ISBN: {book['isbn']}: ")
+                    print(f"Title: {book['title']}")
+                    print(f"Average rating: {book['average_rating']}")
+                    print(f"Page count: {book['page_count']}")
+                    print(f"Initial publication date: {book['initial_pub_date']}\n")
+            except pymysql.Error as e:
+                throw_error(e)
+
         ######### REVIEW ACTIONS ##########
         case "leave_review":
             isbn = input("Enter ISBN of book: ")
@@ -290,6 +341,27 @@ while (running):
             run_procedure(command_string="remove_genre_from_book", args=[name, isbn], success_string="Genre removed from book in database!") 
 
         ########## SYSTEM ACTIONS ##########
+        case "update_account":
+            password = input("Enter a new password: ")
+            display_name = input("Enter a new display name: ")
+            run_procedure("update_user", [user, password, display_name], "Account updated in database!")
+
+        case "delete_account":
+            confirm = input("Are you sure you want to delete your account? Type YES to delete your account: ")
+            if (confirm == "YES"):
+                run_procedure("delete_user", [user], "Account deleted from database!")
+            else:
+                print("Not deleting account!")
+
+        case "get_users":
+            try:
+                cur.callproc("get_users")
+                cnx.commit()
+                for user in cur.fetchall():
+                    print(f"Display name: {user['display_name']}\n")
+            except pymysql.Error as e:
+                throw_error(e)
+
         case "help":
             help_message()
 
