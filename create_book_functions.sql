@@ -248,15 +248,6 @@ BEGIN
 END //
 DELIMITER ;
 
-#CALL add_author("john", "author", 42, "english");
-#CALL add_authorship("101", 1);
-#CALL author_books(1);
-
-# EXAMPLES
-#CALL add_book ("102", "testbook", 200, "testpub2");
-#CALL delete_book ("10231359184");
-#CALL add_publisher("testpub");
-
 DROP PROCEDURE IF EXISTS leave_review;
 DELIMITER //
 CREATE PROCEDURE leave_review(IN in_rating FLOAT, IN in_description VARCHAR(1024), IN in_username VARCHAR(128), IN in_isbn VARCHAR(16))
@@ -359,8 +350,6 @@ BEGIN
 END //
 DELIMITER ;
 
-#SELECT has_reviewed("sam", "101");
-
 DROP PROCEDURE IF EXISTS get_user_reviews;
 DELIMITER //
 CREATE PROCEDURE get_user_reviews(IN in_display_name VARCHAR(128))
@@ -371,9 +360,6 @@ BEGIN
     book WHERE display_name = in_display_name;
 END //
 DELIMITER ;
-
-#CALL get_user_reviews("sam");
-#CALL get_all_reviews_for_book("101");
 
 DROP PROCEDURE IF EXISTS add_author;
 DELIMITER //
@@ -465,8 +451,6 @@ BEGIN
     RETURN display_name_result;
 END //
 DELIMITER ;
-
-#SELECT get_display_name("xdd", "woajdsoa");
 
 DROP FUNCTION IF EXISTS user_exists;
 DELIMITER //

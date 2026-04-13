@@ -293,7 +293,7 @@ while (running):
                 cur.callproc("get_user_reviews", args=[user])
                 cnx.commit()
                 for review in cur.fetchall():
-                    print(f"Review for \"{review['title']}\" with ISBN {review['isbn']}: ")
+                    print(f"Review for \"{review['title']}\" with ISBN {review['isbn']} and review id {review['review_id']}: ")
                     print(f"Star rating: {review['rating']}")
                     print(f"Text review: {review['description']}\n")
             except pymysql.Error as e:
